@@ -1,138 +1,114 @@
-/* Globale Einstellungen und Layout */
-html, body {
+/* Basis-Stil */
+body {
   margin: 0;
   padding: 0;
-  height: 100%;
   font-family: Arial, sans-serif;
-}
-.hidden {
-  display: none;
-}
-
-/* Setup-Bildschirm */
-#setup {
-  max-width: 400px;
-  width: 90%;
-  padding: 20px;
-  margin: 20px auto;
-  background-color: #f0f0f0;
-  border-radius: 10px;
-}
-#setup h2 {
+  background-color: #ffffff; /* Weißer Hintergrund */
+  color: #000000;           /* Schwarze Standardschrift */
   text-align: center;
 }
-#setup label {
-  display: block;
-  margin: 10px 0 5px;
+
+/* Versteckte Elemente */
+.hidden {
+  display: none !important;
 }
-#setup input[type="text"],
-#setup input[type="number"],
-#setup select,
-#setup input[type="range"] {
-  width: 100%;
-  padding: 5px;
+
+/* Setup-Bereich und Game-Bereich */
+#setup, #game, #scoreboard {
+  padding: 20px;
+}
+
+/* Timer oben */
+#timer {
+  font-size: 1.5em;
   margin-bottom: 10px;
 }
-#setup button {
-  width: 100%;
-  padding: 10px;
-  background-color: #007BFF;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  font-size: 1rem;
-}
-#setup button:hover {
-  background-color: #0056b3;
+
+/* Info zu Runde und Spieler */
+.round-info {
+  font-size: 1.2em;
+  margin-bottom: 10px;
 }
 
-/* Spiel-Bildschirm */
-#game {
+/* Aktuelles Wort (groß, farbig) */
+.word {
+  font-size: 2.5em;
+  color: #007BFF; /* Blau als Hervorhebung */
+  margin: 20px 0;
+}
+
+/* Punktestand-Anzeige */
+#score {
+  font-size: 1.2em;
+  margin-bottom: 20px;
+}
+
+/* Button-Container */
+#controls {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  height: 100vh;
-  width: 100%;
+  justify-content: space-around;
+  margin-bottom: 20px;
 }
-#timer {
-  text-align: center;
-  font-size: 1.5rem;
-  margin: 10px 0;
-}
-#word-container {
+
+/* Buttons "Weiter" und "Richtig" */
+#controls button {
   flex: 1;
+  margin: 5px;
+  padding: 15px;
+  font-size: 1.2em;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+#nextBtn {
+  background-color: #cccccc; /* Hellgrau */
+  color: #000;
+}
+#correctBtn {
+  background-color: #28a745; /* Grün */
+  color: #fff;
+}
+
+/* Zeitwahl und Start-Button (flexibel angeordnet) */
+.time-config {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  width: 100%;
-}
-#word {
-  background-color: #FFC107; /* Helles Gelb/Orange für Worthintergrund */
-  padding: 20px;
-  border-radius: 10px;
-  font-size: 2rem;
-  color: #000;
-  max-width: 90%;
-  word-wrap: break-word;
-}
-
-/* Buttons und Punkteanzeige am unteren Bildschirmrand */
-#bottom-bar {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  padding: 10px;
-  background-color: #e0e0e0;
-}
-#bottom-bar > button,
-#bottom-bar > #scoreBoard {
-  flex: 1;
-  padding: 10px;
-}
-#bottom-bar > #nextWord {
-  text-align: left;
-  background-color: #007BFF;
-  color: white;
-  border: none;
-  border-radius: 5px;
-}
-#bottom-bar > #correct {
-  text-align: right;
-  background-color: #007BFF;
-  color: white;
-  border: none;
-  border-radius: 5px;
-}
-#bottom-bar > #scoreBoard {
-  text-align: center;
-  font-size: 1.2rem;
-}
-
-/* Ergebnis-Bildschirm */
-#results {
-  text-align: center;
-  padding: 20px;
-}
-#results h2 {
-  margin-bottom: 10px;
-}
-#results ul {
-  list-style: none;
-  padding: 0;
-}
-#results li {
-  margin: 5px 0;
-  font-size: 1.1rem;
-}
-#results button {
   margin-top: 20px;
-  padding: 10px 20px;
-  background-color: #007BFF;
-  color: white;
-  border: none;
-  border-radius: 5px;
 }
-#results button:hover {
-  background-color: #0056b3;
+.time-config label, .time-config select, .time-config button {
+  margin: 5px;
+  font-size: 1em;
+}
+.countdown {
+  font-size: 1.5em;
+  margin-left: 10px;
+}
+
+/* Scoreboard-Tabelle */
+#resultTable {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  border-collapse: collapse;
+}
+#resultTable th, #resultTable td {
+  border: 1px solid #000;
+  padding: 8px;
+  text-align: left;
+}
+#resultTable th {
+  background-color: #f0f0f0;
+}
+
+/* Responsives Verhalten: Auf kleineren Bildschirmen Buttons untereinander */
+@media (max-width: 600px) {
+  #controls {
+    flex-direction: column;
+  }
+  #controls button {
+    width: 100%;
+  }
 }
 
