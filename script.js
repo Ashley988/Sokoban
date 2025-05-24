@@ -1,187 +1,239 @@
-// JavaScript für das Stirnraten-Spiel
+// ------------------------------
+// Globale Variablen
+// ------------------------------
+let players = [];          // Array der Spieler {name, score}
+let currentPlayerIndex = 0; // Index des aktuellen Spielers
+let totalRounds = 0;       // Runden pro Spieler
+let currentRound = 1;      // Aktuelle Durchgangs-Runde (1 bis totalRounds)
+let timerInterval = null;  // Interval-ID für den Spiel-Timer
+let countdownInterval = null; // Interval-ID für den 3s-Countdown
 
-// Kategorien und Beispiel-Wörter
-const categories = {
-  Natur: ["Baum", "Blume", "Wasser", "Sonne", "Berg", "Wald", "Regen", "Tiere", "Vogel", "See"],
-  Gefühle: ["Freude", "Traurigkeit", "Angst", "Liebe", "Eifersucht", "Zorn", "Ehrfurcht", "Dankbarkeit", "Hoffnung", "Stolz"],
-  Berufe: ["Arzt", "Lehrer", "Ingenieur", "Koch", "Pilot", "Mechaniker", "Künstler", "Bäcker", "Friseur", "Bauer"],
-  Urlaub: ["Strand", "Zelt", "Reisen", "Urlaub", "Berge", "Meer", "Rucksack", "Hotel", "Camping", "Wald"],
-  Farben: ["Rot", "Blau", "Gelb", "Grün", "Orange", "Lila", "Braun", "Schwarz", "Weiß", "Rosa"],
-  Objekte: ["Stuhl", "Tisch", "Auto", "Zug", "Buch", "Fenster", "Computer", "Lampe", "Gabel", "Flasche"],
-  Allgemein: ["Haus", "Baum", "Katze", "Hund", "Stuhl", "Tag", "Mond", "Auto", "Buch", "Kunst"]
-};
+// DOM-Elemente abrufen
+const setupDiv = document.getElementById('setup');
+const gameDiv = document.getElementById('game');
+const scoreboardDiv = document.getElementById('scoreboard');
+const playerNamesInput = document.getElementById('playerNames');
+const roundsCountInput = document.getElementById('roundsCount');
+const startGameBtn = document.getElementById('startGameBtn');
+const roundInfo = document.getElementById('roundInfo');
+const timerDisplay = document.getElementById('timer');
+const wordDisplay = document.getElementById('word');
+const scoreDisplay = document.getElementById('score');
+const nextBtn = document.getElementById('nextBtn');
+const correctBtn = document.getElementById('correctBtn');
+const controlsDiv = document.getElementById('controls');
+const timeConfigDiv = document.getElementById('timeConfig');
+const timeSelect = document.getElementById('timeSelect');
+const startRoundBtn = document.getElementById('startRoundBtn');
+const countdownDisplay = document.getElementById('countdown');
+const resultTable = document.getElementById('resultTable');
 
-// Spielzustand
-let players = [];              // Array für Spieler-Objekte {name, score}
-let playerCount = 0;
-let totalRounds = 0;
-let currentRound = 1;
-let currentPlayerIndex = 0;
-let words = [];                // Liste der Wörter für die aktuelle Runde
-let timerInterval;
-let timeLeft = 0;
+// Beispiel-Wortliste (beliebig erweiterbar)
+const words = [
+  "Apfel", "Banane", "Computer", "Haus", "Katze",
+  "Hund", "Auto", "Baum", "Stuhl", "Tisch",
+  "Blume", "Straße", "Kuh", "Sonne", "Mond",
+  "Buch", "Vogel", "Tür", "Fenster", "Schule"
+];
 
-// Hilfsfunktion: Shuffled Kopie eines Arrays
-function shuffle(array) {
-  return array.sort(() => Math.random() - 0.5);
-}
+// ------------------------------
+// Initialisierung nach DOM-Loaded
+// ------------------------------
+document.addEventListener('DOMContentLoaded', () => {
+  // Zeit-Dropdown mit Werten füllen (30s bis 300s in 15s-Schritten)
+  for (let t = 30; t <= 300; t += 15) {
+    const option = document.createElement('option');
+    option.value = t;
+    // Anzeigeformat mm:ss oder ss
+    const min = Math.floor(t / 60);
+    const sec = t % 60;
+    option.text = min > 0 
+      ? `${min}:${sec.toString().padStart(2, '0')}` 
+      : `${sec}s`;
+    timeSelect.add(option);
+  }
 
-// Initialisierung bei Seitenaufruf
-window.addEventListener('load', () => {
-  updatePlayerNameFields();  // Erstellt die Eingabefelder für Spielernamen
-  // Event-Listener
-  document.getElementById('playerCount').addEventListener('change', updatePlayerNameFields);
-  document.getElementById('time').addEventListener('input', () => {
-    document.getElementById('timeDisplay').textContent = document.getElementById('time').value + " Sek.";
-  });
-  document.getElementById('startBtn').addEventListener('click', startGame);
-  document.getElementById('nextWord').addEventListener('click', showNextWord);
-  document.getElementById('correct').addEventListener('click', markCorrect);
-  document.getElementById('restartBtn').addEventListener('click', () => location.reload());
+  // Event-Listener für Buttons registrieren
+  startGameBtn.addEventListener('click', startGame);
+  startRoundBtn.addEventListener('click', startRound);
+  nextBtn.addEventListener('click', nextWord);
+  correctBtn.addEventListener('click', markCorrect);
 });
 
-// Aktualisiert die Eingabefelder für Spielernamen basierend auf Spieleranzahl
-function updatePlayerNameFields() {
-  const count = parseInt(document.getElementById('playerCount').value);
-  const container = document.getElementById('playerNames');
-  container.innerHTML = '';
-  for (let i = 0; i < count; i++) {
-    const label = document.createElement('label');
-    label.textContent = "Name Spieler " + (i + 1) + ": ";
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.id = 'playerName' + i;
-    input.placeholder = 'Name';
-    input.value = 'Spieler ' + (i + 1);
-    label.appendChild(input);
-    container.appendChild(label);
-    container.appendChild(document.createElement('br'));
-  }
-}
-
-// Startet das Spiel: liest Einstellungen, initialisiert Spieler und startet die erste Runde
+// ------------------------------
+// Spiel starten (Setup)
+// ------------------------------
 function startGame() {
-  // Einstellungen einlesen
-  playerCount = parseInt(document.getElementById('playerCount').value);
-  totalRounds = parseInt(document.getElementById('rounds').value) || 1;
-  const roundTime = parseInt(document.getElementById('time').value);
-  const category = document.getElementById('category').value;
-
-  // Spieler-Objekte erstellen
-  players = [];
-  for (let i = 0; i < playerCount; i++) {
-    const name = document.getElementById('playerName' + i).value.trim() 
-                 || ("Spieler " + (i + 1));
-    players.push({ name: name, score: 0 });
+  // Spielernamen einlesen (Komma-getrennt) und trimmen
+  const names = playerNamesInput.value.split(',')
+    .map(name => name.trim())
+    .filter(name => name !== "");
+  // Wenn keine Namen eingegeben wurden, Standardnamen vergeben
+  if (names.length === 0) {
+    names.push("Spieler 1");
   }
+  // Anzahl Runden pro Spieler einlesen (mindestens 1)
+  const rounds = parseInt(roundsCountInput.value);
+  totalRounds = isNaN(rounds) || rounds < 1 ? 1 : rounds;
 
-  // Wortliste kopieren und mischen
-  words = shuffle(Array.from(categories[category] || []));
+  // Spieler-Array initialisieren (mit 0 Punkten)
+  players = names.map(name => ({ name: name, score: 0 }));
 
-  // UI wechseln: Setup ausblenden, Spielbildschirm einblenden
-  document.getElementById('setup').classList.add('hidden');
-  document.getElementById('game').classList.remove('hidden');
+  // Setup-UI verstecken, Spiel-UI anzeigen
+  setupDiv.classList.add('hidden');
+  gameDiv.classList.remove('hidden');
 
+  // Erste Runde vorbereiten
   currentPlayerIndex = 0;
   currentRound = 1;
-  timeLeft = roundTime;
-
-  // Punktestand und Timer initialisieren
-  updateScoreBoard();
-  updateTimerDisplay();
-  startTimer(roundTime);
-  showNextWord();
+  nextTurn();
 }
 
-// Zeigt das nächste Wort an oder beendet die Runde, wenn keine Wörter mehr übrig sind
-function showNextWord() {
-  if (words.length === 0) {
-    endRound();
-    return;
+// ------------------------------
+// Vorbereiten der nächsten Runde
+// ------------------------------
+function nextTurn() {
+  // Prüfen, ob weitere Runden ausstehen
+  if (currentRound <= totalRounds) {
+    // Aktueller Spieler ermitteln
+    const player = players[currentPlayerIndex];
+    // Info anzeigen: Runde X/Y und Spielername
+    roundInfo.textContent = `Runde ${currentRound}/${totalRounds} – ${player.name} ist dran`;
+    // Score-Anzeige für aktuellen Spieler aktualisieren
+    scoreDisplay.textContent = `Punkte: ${player.score}`;
+    // Wort und Buttons ausblenden bis Start der Runde
+    wordDisplay.textContent = "";
+    wordDisplay.classList.add('hidden');
+    controlsDiv.classList.add('hidden');
+    // Zeit-Konfigurationsbereich einblenden
+    timeConfigDiv.classList.remove('hidden');
+    countdownDisplay.classList.add('hidden');
+  } else {
+    // Alle Runden gespielt – Spiel beenden
+    endGame();
   }
-  const word = words.pop();  // letztes Wort holen und entfernen
-  document.getElementById('word').textContent = word;
 }
 
-// Wird aufgerufen, wenn der Spieler korrekt geantwortet hat
-function markCorrect() {
-  players[currentPlayerIndex].score++;
-  updateScoreBoard();
-  showNextWord();
-}
+// ------------------------------
+// Runde starten (nach Klick auf "Runde starten")
+// ------------------------------
+function startRound() {
+  // Ausgewählte Zeit aus dem Dropdown (Sekunden)
+  const duration = parseInt(timeSelect.value);
+  // Countdown vorbereiten
+  let count = 3;
+  countdownDisplay.textContent = count;
+  countdownDisplay.classList.remove('hidden');
+  timeConfigDiv.classList.add('hidden'); // Auswahl ausblenden während Countdown
 
-// Aktualisiert die Anzeige für den aktuellen Punktestand
-function updateScoreBoard() {
-  const sb = document.getElementById('scoreBoard');
-  sb.textContent = players[currentPlayerIndex].name + ": " 
-                   + players[currentPlayerIndex].score + " Punkte";
-}
-
-// Startet den Countdown-Timer
-function startTimer(duration) {
-  clearInterval(timerInterval);
-  timeLeft = duration;
-  updateTimerDisplay();
-  timerInterval = setInterval(() => {
-    timeLeft--;
-    if (timeLeft >= 0) {
-      updateTimerDisplay();
-    }
-    if (timeLeft <= 0) {
-      clearInterval(timerInterval);
-      endRound();
+  // 3-Sekunden-Countdown
+  countdownInterval = setInterval(() => {
+    count--;
+    if (count > 0) {
+      countdownDisplay.textContent = count;
+    } else {
+      clearInterval(countdownInterval);
+      countdownDisplay.classList.add('hidden');
+      // Runde beginnt: Wort und Buttons einblenden
+      wordDisplay.classList.remove('hidden');
+      controlsDiv.classList.remove('hidden');
+      // Ersten Timer-Wert anzeigen
+      updateTimerDisplay(duration);
+      // Zufälliges erstes Wort anzeigen
+      nextWord();
+      // Timer starten
+      startTimer(duration);
     }
   }, 1000);
 }
 
-// Aktualisiert die Timer-Anzeige im Format MM:SS
-function updateTimerDisplay() {
-  const minutes = Math.floor(timeLeft / 60);
-  const seconds = timeLeft % 60;
-  const mm = minutes.toString().padStart(2, '0');
-  const ss = seconds.toString().padStart(2, '0');
-  document.getElementById('timeLeft').textContent = mm + ":" + ss;
+// ------------------------------
+// Timer starten für die Runde
+// ------------------------------
+function startTimer(seconds) {
+  let timeLeft = seconds;
+  // Jede Sekunde den Timer aktualisieren
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    if (timeLeft >= 0) {
+      updateTimerDisplay(timeLeft);
+    }
+    // Zeit abgelaufen
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      // Wechsel zum nächsten Spieler
+      switchPlayer();
+    }
+  }, 1000);
 }
 
-// Beendet die aktuelle Runde und startet gegegebenenfalls die nächste Runde oder das Spielende
-function endRound() {
-  clearInterval(timerInterval);
-  // Nächster Spieler bzw. nächste Runde
-  if (currentPlayerIndex < playerCount - 1) {
-    currentPlayerIndex++;
-  } else {
+// Timer-Anzeige (Format m:ss)
+function updateTimerDisplay(time) {
+  const min = Math.floor(time / 60);
+  const sec = time % 60;
+  timerDisplay.textContent = `Zeit: ${min}:${sec.toString().padStart(2, '0')}`;
+}
+
+// ------------------------------
+// Wörter verwalten
+// ------------------------------
+// Zeigt das nächste Wort an (zufällig aus dem Array)
+function nextWord() {
+  const index = Math.floor(Math.random() * words.length);
+  wordDisplay.textContent = words[index];
+}
+
+// ------------------------------
+// Button-Handler
+// ------------------------------
+function markCorrect() {
+  // Punkt für aktuellen Spieler
+  players[currentPlayerIndex].score++;
+  scoreDisplay.textContent = `Punkte: ${players[currentPlayerIndex].score}`;
+  // Nächstes Wort zeigen
+  nextWord();
+}
+
+// "Weiter": Nächste Wort ohne Punkt
+// (Macht dasselbe wie nextWord())
+nextBtn.addEventListener('click', nextWord);
+
+// ------------------------------
+// Spielerwechsel nach Ablauf der Zeit
+// ------------------------------
+function switchPlayer() {
+  // Aktuelle Runde und Spieler erhöhen
+  currentPlayerIndex++;
+  // Wenn alle Spieler einmal dran waren, zur nächsten Rundendurchgang wechseln
+  if (currentPlayerIndex >= players.length) {
     currentPlayerIndex = 0;
     currentRound++;
   }
-  if (currentRound > totalRounds) {
-    // Spiel beenden und Ergebnis anzeigen
-    showResults();
-  } else {
-    // Neue Runde vorbereiten
-    const category = document.getElementById('category').value;
-    words = shuffle(Array.from(categories[category] || []));
-    const roundTime = parseInt(document.getElementById('time').value);
-    timeLeft = roundTime;
-    updateTimerDisplay();
-    updateScoreBoard();
-    startTimer(roundTime);
-    showNextWord();
-  }
+  // Nächste Runde oder Spielende
+  nextTurn();
 }
 
-// Zeigt den Ergebnisbildschirm mit den Endständen
-function showResults() {
-  document.getElementById('game').classList.add('hidden');
-  const resultsSection = document.getElementById('results');
-  resultsSection.classList.remove('hidden');
-  // Ergebnisse auflisten
-  const resultList = document.getElementById('resultList');
-  resultList.innerHTML = '';
-  // Nach Punkten sortieren (absteigend)
-  players.sort((a, b) => b.score - a.score);
-  for (const player of players) {
-    const li = document.createElement('li');
-    li.textContent = player.name + ": " + player.score + " Punkte";
-    resultList.appendChild(li);
-  }
+// ------------------------------
+// Spiel beenden und Scoreboard anzeigen
+// ------------------------------
+function endGame() {
+  // Spiel-UI verstecken
+  gameDiv.classList.add('hidden');
+  // Scoreboard berechnen
+  // Sortiere Spieler nach absteigender Punktzahl
+  const ranking = [...players].sort((a, b) => b.score - a.score);
+  // Tabelle leeren und neue Kopfzeile anlegen
+  resultTable.innerHTML = `
+    <tr><th>Platz</th><th>Spieler</th><th>Punkte</th></tr>
+  `;
+  // Zeilen für Rangliste hinzufügen
+  ranking.forEach((player, index) => {
+    const row = resultTable.insertRow();
+    row.insertCell().textContent = (index + 1) + ".";
+    row.insertCell().textContent = player.name;
+    row.insertCell().textContent = player.score;
+  });
+  // Scoreboard anzeigen
+  scoreboardDiv.classList.remove('hidden');
 }
+
