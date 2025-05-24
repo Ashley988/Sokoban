@@ -1,125 +1,138 @@
-/* Grundlayout */
-body {
+/* Globale Einstellungen und Layout */
+html, body {
   margin: 0;
-  padding: 20px;
-  background-color: #FFEB3B;  /* heller Gelbton Hintergrund */
-  color: #000;
-  font-family: "Comic Sans MS", "Comic Sans", cursive;  /* verspielte Schriftart */
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
+  padding: 0;
+  height: 100%;
+  font-family: Arial, sans-serif;
 }
-
-/* Überschriften */
-h1, h2 {
-  margin-bottom: 20px;
-}
-
-/* Startbildschirm Styles */
-#setupScreen {
-  max-width: 300px;
-  margin: auto;
-}
-#nameInputs {
-  margin: 10px 0;
-}
-#nameInputs input {
-  display: block;
-  width: 100%;
-  padding: 8px;
-  margin: 5px 0;
-  font-size: 1em;
-}
-#startGameBtn {
-  padding: 10px 20px;
-  font-size: 1.1em;
-  cursor: pointer;
-}
-
-/* Kategorie-Auswahl Styles */
-#categoryButtons {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  max-width: 400px;
-  margin: 0 auto;
-}
-#categoryButtons button {
-  flex: 1 1 40%;
-  /* Zwei Spalten auf größeren Displays, auf sehr kleinen evtl. 100% Breite */
-  padding: 10px;
-  margin: 5px;
-  font-size: 1em;
-  cursor: pointer;
-  border: 2px solid #333;
-  border-radius: 5px;
-  background: #fff;
-}
-
-/* Spielrunde Styles */
-.timer {
-  font-size: 2em;
-  font-weight: bold;
-  margin-bottom: 10px;
-}
-.word-display {
-  font-size: 2.5em;
-  font-weight: bold;
-  margin: 20px;
-  min-height: 1.5em;
-}
-#buttonsRow {
-  display: flex;
-  justify-content: space-around;
-  margin-top: 20px;
-}
-.game-btn {
-  flex: 0 1 45%;
-  font-size: 1.2em;
-  padding: 15px;
-  border: none;
-  border-radius: 8px;
-  color: #fff;
-  cursor: pointer;
-}
-.pass-btn {
-  background-color: #e53935;  /* Rot */
-}
-.next-btn {
-  background-color: #43a047;  /* Grün */
-}
-
-/* Countdown-Anzeige */
-.countdown {
-  font-size: 4em;
-  font-weight: bold;
-  margin-top: 50px;
-}
-
-/* Zwischen- und Endbildschirme */
-#nextPlayerScreen, #resultScreen {
-  margin-top: 50px;
-}
-#scoreBoard {
-  text-align: left;
-  max-width: 300px;
-  margin: 0 auto 20px auto;
-}
-#scoreBoard p {
-  font-size: 1.2em;
-  margin: 5px;
-}
-/* Gewinner-Markierung */
-.winner {
-  font-weight: bold;
-  color: #d32f2f;
-}
-
-/* Versteckt-Klasse für Screens */
 .hidden {
   display: none;
 }
 
+/* Setup-Bildschirm */
+#setup {
+  max-width: 400px;
+  width: 90%;
+  padding: 20px;
+  margin: 20px auto;
+  background-color: #f0f0f0;
+  border-radius: 10px;
+}
+#setup h2 {
+  text-align: center;
+}
+#setup label {
+  display: block;
+  margin: 10px 0 5px;
+}
+#setup input[type="text"],
+#setup input[type="number"],
+#setup select,
+#setup input[type="range"] {
+  width: 100%;
+  padding: 5px;
+  margin-bottom: 10px;
+}
+#setup button {
+  width: 100%;
+  padding: 10px;
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+#setup button:hover {
+  background-color: #0056b3;
+}
+
+/* Spiel-Bildschirm */
+#game {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100vh;
+  width: 100%;
+}
+#timer {
+  text-align: center;
+  font-size: 1.5rem;
+  margin: 10px 0;
+}
+#word-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+#word {
+  background-color: #FFC107; /* Helles Gelb/Orange für Worthintergrund */
+  padding: 20px;
+  border-radius: 10px;
+  font-size: 2rem;
+  color: #000;
+  max-width: 90%;
+  word-wrap: break-word;
+}
+
+/* Buttons und Punkteanzeige am unteren Bildschirmrand */
+#bottom-bar {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 10px;
+  background-color: #e0e0e0;
+}
+#bottom-bar > button,
+#bottom-bar > #scoreBoard {
+  flex: 1;
+  padding: 10px;
+}
+#bottom-bar > #nextWord {
+  text-align: left;
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  border-radius: 5px;
+}
+#bottom-bar > #correct {
+  text-align: right;
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  border-radius: 5px;
+}
+#bottom-bar > #scoreBoard {
+  text-align: center;
+  font-size: 1.2rem;
+}
+
+/* Ergebnis-Bildschirm */
+#results {
+  text-align: center;
+  padding: 20px;
+}
+#results h2 {
+  margin-bottom: 10px;
+}
+#results ul {
+  list-style: none;
+  padding: 0;
+}
+#results li {
+  margin: 5px 0;
+  font-size: 1.1rem;
+}
+#results button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  border-radius: 5px;
+}
+#results button:hover {
+  background-color: #0056b3;
+}
 
