@@ -1,55 +1,8 @@
-body {
-  background: #aee9f5;
-  font-family: 'Segoe UI', Arial, sans-serif;
-  margin: 0;
-  color: #444;
-}
-h1 {
-  text-align: center;
-  color: #2882b7;
-  font-family: 'Press Start 2P', 'Courier New', Courier, monospace;
-  margin-top: 24px;
-  letter-spacing: 2px;
-  font-size: 2.2em;
-  text-shadow: 2px 4px 8px #ffffffcc;
-}
-.centered {
+#canvasWrap {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 18px;
-}
-.color-btn, .bg-btn {
-  width: 38px; height: 38px;
-  border-radius: 8px;
-  border: 3px solid #fff;
-  margin: 0 8px 16px 8px;
-  cursor: pointer;
-  box-shadow: 1px 2px 7px #8885;
-  transition: transform .12s;
-  outline: none;
-}
-.color-btn.selected, .bg-btn.selected {
-  border: 3px solid #2882b7;
-  transform: scale(1.16);
-  box-shadow: 0 0 10px #2882b799;
-}
-#startBtn, .level-btn {
-  background: #31c2a3;
-  color: #fff;
-  border: none;
-  border-radius: 9px;
-  padding: 11px 34px;
-  font-size: 1.16em;
-  margin: 17px 6px 0 6px;
-  cursor: pointer;
-  font-family: 'Press Start 2P', 'Courier New', Courier, monospace;
-  letter-spacing: 2px;
-  box-shadow: 0 3px 13px #2882b766;
-  transition: background .2s;
-}
-#startBtn:hover, .level-btn:hover {
-  background: #2882b7;
 }
 #game {
   background: #aee9f5;
@@ -57,25 +10,50 @@ h1 {
   border: 3px solid #2882b7;
   margin: 25px auto 0 auto;
   box-shadow: 0 6px 24px #2177b977;
+  max-width: 100vw;
+  max-height: 70vh;
+  width: 1200px;
+  height: 700px;
 }
-#scoreBox {
-  font-size: 1.12em;
-  text-align: center;
-  margin-top: 4px;
-  font-family: 'Press Start 2P', 'Courier New', Courier, monospace;
-  letter-spacing: 1.2px;
+#controller {
+  margin: 18px 0 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  user-select: none;
 }
-.level-select {
+.ctrl-row {
   display: flex;
   justify-content: center;
-  gap: 28px;
-  margin: 20px 0 16px 0;
+  margin: 0;
 }
-.level-btn.selected {
-  background: #fdc221;
-  color: #444;
-  border: 2px solid #fff;
+.ctrl-btn {
+  width: 64px;
+  height: 64px;
+  font-size: 2.4em;
+  margin: 0 16px 16px 16px;
+  border-radius: 18px;
+  border: 2px solid #2882b7;
+  background: #f7fafc;
+  box-shadow: 0 2px 8px #2882b733;
+  color: #2882b7;
+  font-family: 'Press Start 2P', monospace;
+  cursor: pointer;
+  outline: none;
+  transition: background 0.15s, color 0.15s;
 }
-@media (max-width: 700px) {
-  #game { width: 98vw !important; }
+.ctrl-btn:active {
+  background: #31c2a3;
+  color: #fff;
+}
+@media (max-width: 1400px) {
+  #game { width: 98vw; height: 56vw; max-height: 70vh;}
+}
+@media (max-width: 800px) {
+  #game { width: 98vw; height: 60vw; max-height: 66vw;}
+  .ctrl-btn { width: 48px; height: 48px; font-size: 1.6em; }
+}
+@media (max-width: 500px) {
+  #game { width: 98vw; height: 78vw; }
+  .ctrl-btn { width: 38px; height: 38px; font-size: 1.2em; }
 }
