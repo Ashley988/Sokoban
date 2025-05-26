@@ -5,6 +5,7 @@
   <title>ASLI Jump'n'Run</title>
   <link rel="stylesheet" href="style.css">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
   <h1>ASLI Jump'n'Run</h1>
@@ -25,7 +26,19 @@
   </div>
   <div id="gameContainer" style="display:none;">
     <div id="scoreBox"></div>
-    <canvas id="game" width="700" height="400"></canvas>
+    <div id="canvasWrap">
+      <canvas id="game"></canvas>
+      <div id="controller">
+        <div class="ctrl-row">
+          <button id="btn-up" class="ctrl-btn">▲</button>
+        </div>
+        <div class="ctrl-row">
+          <button id="btn-left" class="ctrl-btn">◀</button>
+          <button id="btn-down" class="ctrl-btn">▼</button>
+          <button id="btn-right" class="ctrl-btn">▶</button>
+        </div>
+      </div>
+    </div>
     <div class="centered">
       <button onclick="location.reload()" style="margin-top:18px;">Zurück zum Menü</button>
     </div>
