@@ -1,239 +1,348 @@
-// ------------------------------
-// Globale Variablen
-// ------------------------------
-let players = [];          // Array der Spieler {name, score}
-let currentPlayerIndex = 0; // Index des aktuellen Spielers
-let totalRounds = 0;       // Runden pro Spieler
-let currentRound = 1;      // Aktuelle Durchgangs-Runde (1 bis totalRounds)
-let timerInterval = null;  // Interval-ID für den Spiel-Timer
-let countdownInterval = null; // Interval-ID für den 3s-Countdown
+const mainMenu = document.getElementById("mainMenu");
+const gameArea = document.getElementById("gameArea");
+const startBtn = document.getElementById("startBtn");
+const playerNameInput = document.getElementById("playerName");
+const themeSelect = document.getElementById("themeSelect");
+const playerColorInput = document.getElementById("playerColor");
+const storyBox = document.getElementById("storyBox");
+const levelHeader = document.getElementById("levelHeader");
+const menuBtn = document.getElementById("menuBtn");
 
-// DOM-Elemente abrufen
-const setupDiv = document.getElementById('setup');
-const gameDiv = document.getElementById('game');
-const scoreboardDiv = document.getElementById('scoreboard');
-const playerNamesInput = document.getElementById('playerNames');
-const roundsCountInput = document.getElementById('roundsCount');
-const startGameBtn = document.getElementById('startGameBtn');
-const roundInfo = document.getElementById('roundInfo');
-const timerDisplay = document.getElementById('timer');
-const wordDisplay = document.getElementById('word');
-const scoreDisplay = document.getElementById('score');
-const nextBtn = document.getElementById('nextBtn');
-const correctBtn = document.getElementById('correctBtn');
-const controlsDiv = document.getElementById('controls');
-const timeConfigDiv = document.getElementById('timeConfig');
-const timeSelect = document.getElementById('timeSelect');
-const startRoundBtn = document.getElementById('startRoundBtn');
-const countdownDisplay = document.getElementById('countdown');
-const resultTable = document.getElementById('resultTable');
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
 
-// Beispiel-Wortliste (beliebig erweiterbar)
-const words = [
-  "Apfel", "Banane", "Computer", "Haus", "Katze",
-  "Hund", "Auto", "Baum", "Stuhl", "Tisch",
-  "Blume", "Straße", "Kuh", "Sonne", "Mond",
-  "Buch", "Vogel", "Tür", "Fenster", "Schule"
+const undoBtn = document.getElementById("undoBtn");
+const restartLevelBtn = document.getElementById("restartLevelBtn");
+const levelSelectBtn = document.getElementById("levelSelectBtn");
+const levelSelect = document.getElementById("levelSelect");
+
+// Tiles: 0=leer, 1=Wand, 2=Spieler, 3=Ziel, 4=Kiste, 5=Kiste+Ziel
+const levels = [
+  [
+    [1,1,1,1,1,1,1],
+    [1,0,0,0,0,3,1],
+    [1,0,4,1,0,0,1],
+    [1,0,1,0,0,0,1],
+    [1,0,0,0,4,0,1],
+    [1,2,0,0,0,0,1],
+    [1,1,1,1,1,1,1],
+  ],
+  [
+    [1,1,1,1,1,1,1],
+    [1,3,0,0,0,0,1],
+    [1,0,4,1,0,0,1],
+    [1,0,1,0,4,0,1],
+    [1,0,0,0,1,0,1],
+    [1,2,0,0,0,3,1],
+    [1,1,1,1,1,1,1],
+  ],
+  // Weitere Level kannst du nach Belieben einbauen!
 ];
 
-// ------------------------------
-// Initialisierung nach DOM-Loaded
-// ------------------------------
-document.addEventListener('DOMContentLoaded', () => {
-  // Zeit-Dropdown mit Werten füllen (30s bis 300s in 15s-Schritten)
-  for (let t = 30; t <= 300; t += 15) {
-    const option = document.createElement('option');
-    option.value = t;
-    // Anzeigeformat mm:ss oder ss
-    const min = Math.floor(t / 60);
-    const sec = t % 60;
-    option.text = min > 0 
-      ? `${min}:${sec.toString().padStart(2, '0')}` 
-      : `${sec}s`;
-    timeSelect.add(option);
-  }
+let gameState = {
+  player: { name: "Held*in", theme: "classic", color: "#68d9ee" },
+  level: 1,
+  px: 1, py: 5,
+  history: [],
+  solved: []
+};
 
-  // Event-Listener für Buttons registrieren
-  startGameBtn.addEventListener('click', startGame);
-  startRoundBtn.addEventListener('click', startRound);
-  nextBtn.addEventListener('click', nextWord);
-  correctBtn.addEventListener('click', markCorrect);
-});
-
-// ------------------------------
-// Spiel starten (Setup)
-// ------------------------------
-function startGame() {
-  // Spielernamen einlesen (Komma-getrennt) und trimmen
-  const names = playerNamesInput.value.split(',')
-    .map(name => name.trim())
-    .filter(name => name !== "");
-  // Wenn keine Namen eingegeben wurden, Standardnamen vergeben
-  if (names.length === 0) {
-    names.push("Spieler 1");
-  }
-  // Anzahl Runden pro Spieler einlesen (mindestens 1)
-  const rounds = parseInt(roundsCountInput.value);
-  totalRounds = isNaN(rounds) || rounds < 1 ? 1 : rounds;
-
-  // Spieler-Array initialisieren (mit 0 Punkten)
-  players = names.map(name => ({ name: name, score: 0 }));
-
-  // Setup-UI verstecken, Spiel-UI anzeigen
-  setupDiv.classList.add('hidden');
-  gameDiv.classList.remove('hidden');
-
-  // Erste Runde vorbereiten
-  currentPlayerIndex = 0;
-  currentRound = 1;
-  nextTurn();
+function loadProgress() {
+  try {
+    let data = localStorage.getItem("pixelSokobanSave");
+    if (data) {
+      let obj = JSON.parse(data);
+      if (obj && Array.isArray(obj.solved)) gameState.solved = obj.solved;
+    }
+  } catch(e){}
+}
+function saveProgress() {
+  localStorage.setItem("pixelSokobanSave", JSON.stringify({solved: gameState.solved}));
 }
 
-// ------------------------------
-// Vorbereiten der nächsten Runde
-// ------------------------------
-function nextTurn() {
-  // Prüfen, ob weitere Runden ausstehen
-  if (currentRound <= totalRounds) {
-    // Aktueller Spieler ermitteln
-    const player = players[currentPlayerIndex];
-    // Info anzeigen: Runde X/Y und Spielername
-    roundInfo.textContent = `Runde ${currentRound}/${totalRounds} – ${player.name} ist dran`;
-    // Score-Anzeige für aktuellen Spieler aktualisieren
-    scoreDisplay.textContent = `Punkte: ${player.score}`;
-    // Wort und Buttons ausblenden bis Start der Runde
-    wordDisplay.textContent = "";
-    wordDisplay.classList.add('hidden');
-    controlsDiv.classList.add('hidden');
-    // Zeit-Konfigurationsbereich einblenden
-    timeConfigDiv.classList.remove('hidden');
-    countdownDisplay.classList.add('hidden');
+function showStory(text, timeout = 0) {
+  if (!storyBox) return;
+  storyBox.textContent = text;
+  if (timeout > 0) setTimeout(() => storyBox.textContent = "", timeout);
+}
+
+// Fortschritts-Kommentar
+function showProgressStory() {
+  let total = levels.length;
+  let solved = (gameState.solved||[]).length;
+  if (solved === 0) return;
+  if (solved < total/3) showStory(`Gut gemacht! Du hast schon ${solved} von ${total} Rätseln gelöst.`);
+  else if (solved < total-1) showStory(`Beeindruckend, ${gameState.player.name}! Noch ${total-solved} Level bis zum Ziel.`);
+  else if (solved === total-1) showStory("Vor dir liegt das finale Abenteuer – das letzte Rätsel wartet!");
+  else showStory("Du hast alle Rätsel dieser Welt gemeistert. Stolz? Das solltest du sein!");
+}
+
+// Joystick
+const joystickOuter = document.getElementById("joystickOuter");
+const joystickThumb = document.getElementById("joystickThumb");
+let joystickActive = false;
+let lastMove = 0;
+
+function joystickStart(e) {
+  joystickActive = true;
+  updateJoystick(e);
+  document.addEventListener("mousemove", updateJoystick);
+  document.addEventListener("touchmove", updateJoystick);
+  document.addEventListener("mouseup", joystickEnd);
+  document.addEventListener("touchend", joystickEnd);
+}
+function joystickEnd() {
+  joystickActive = false;
+  joystickThumb.style.transform = "";
+  document.removeEventListener("mousemove", updateJoystick);
+  document.removeEventListener("touchmove", updateJoystick);
+  document.removeEventListener("mouseup", joystickEnd);
+  document.removeEventListener("touchend", joystickEnd);
+}
+function updateJoystick(e) {
+  if (!joystickActive) return;
+  let rect = joystickOuter.getBoundingClientRect();
+  let cx = rect.left+rect.width/2, cy = rect.top+rect.height/2;
+  let x, y;
+  if (e.touches && e.touches.length) {
+    x = e.touches[0].clientX; y = e.touches[0].clientY;
   } else {
-    // Alle Runden gespielt – Spiel beenden
+    x = e.clientX; y = e.clientY;
+  }
+  let dx = x-cx, dy = y-cy;
+  let dist = Math.sqrt(dx*dx+dy*dy);
+  let max = rect.width/2-18;
+  if (dist > max) { dx = dx*max/dist; dy = dy*max/dist; }
+  joystickThumb.style.transform = `translate(${dx}px,${dy}px)`;
+  if (dist>18) {
+    let now = Date.now();
+    if (now-lastMove < 140) return;
+    lastMove = now;
+    let angle = Math.atan2(dy, dx);
+    if (angle>=-Math.PI/4 && angle<Math.PI/4) movePlayer("right");
+    else if (angle>=Math.PI/4 && angle<3*Math.PI/4) movePlayer("down");
+    else if (angle<=-Math.PI/4 && angle>-3*Math.PI/4) movePlayer("up");
+    else movePlayer("left");
+  }
+}
+joystickOuter.addEventListener('touchstart', joystickStart);
+joystickOuter.addEventListener('mousedown', joystickStart);
+
+startBtn.onclick = () => {
+  gameState.player.name = playerNameInput.value.trim() || "Held*in";
+  gameState.player.theme = themeSelect.value;
+  gameState.player.color = playerColorInput.value;
+  mainMenu.style.display = "none";
+  gameArea.style.display = "flex";
+  gameState.level = parseInt(levelSelect.value) || 1;
+  loadLevel(gameState.level);
+  levelHeader.textContent = `Level ${gameState.level} – ${gameState.player.name}`;
+  showStory("Schiebe alle Kisten auf die Ziele. Viel Erfolg, Abenteurer!");
+};
+
+menuBtn.onclick = () => {
+  gameArea.style.display = "none";
+  mainMenu.style.display = "flex";
+  showStory("Trage deinen Namen ein, wähle Farbe und Stil und starte das Abenteuer!");
+  levelHeader.textContent = "";
+  playerNameInput.value = "";
+};
+
+undoBtn.onclick = () => {
+  undo();
+};
+restartLevelBtn.onclick = () => {
+  loadLevel(gameState.level);
+  showStory("Level zurückgesetzt.");
+};
+levelSelectBtn.onclick = () => {
+  gameArea.style.display = "none";
+  mainMenu.style.display = "flex";
+};
+
+let currentLevel = null;
+
+function loadLevel(n) {
+  if (!levels[n-1]) return;
+  currentLevel = JSON.parse(JSON.stringify(levels[n-1]));
+  gameState.history = [];
+  for (let y=0; y<currentLevel.length; y++)
+    for (let x=0; x<currentLevel[0].length; x++)
+      if (currentLevel[y][x] === 2) { gameState.px = x; gameState.py = y; }
+  drawLevel();
+  // Level-Story-Text
+  if (gameState.solved && gameState.solved.includes(n)) {
+    showStory("Du hast dieses Level bereits geschafft!");
+    setTimeout(showProgressStory, 1600);
+  } else if (n === 1) {
+    showStory("Dein Abenteuer beginnt! Schiebe alle Kisten auf die Ziele.");
+  } else if (n === 2) {
+    showStory("Du merkst, die Rätsel werden anspruchsvoller...");
+  } else if (n === levels.length) {
+    showStory("Vor dir liegt das letzte Rätsel. Zeig, was du kannst!");
+  } else {
+    showStory("Kannst du dieses Rätsel auch meistern?");
+  }
+}
+
+function drawLevel() {
+  const level = currentLevel;
+  const tileSize = Math.floor(canvas.width / level[0].length);
+
+  // Theme-Farben
+  let wallCol = "#333", bgCol = "#23242a", goalCol = "#ffd500", boxCol = "#bc8b2c";
+  if (gameState.player.theme === "forest") {
+    wallCol = "#294b29"; bgCol = "#1a2e19"; goalCol = "#a1ff55"; boxCol = "#916c31";
+  } else if (gameState.player.theme === "night") {
+    wallCol = "#23233a"; bgCol = "#19192a"; goalCol = "#fff"; boxCol = "#e8be6c";
+  }
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  for (let y=0; y<level.length; y++) {
+    for (let x=0; x<level[0].length; x++) {
+      let v = level[y][x];
+      // Wand
+      if (v === 1) {
+        ctx.fillStyle = wallCol;
+        ctx.fillRect(x*tileSize, y*tileSize, tileSize, tileSize);
+      } else {
+        ctx.fillStyle = bgCol;
+        ctx.fillRect(x*tileSize, y*tileSize, tileSize, tileSize);
+      }
+      // Ziel
+      if (v === 3 || v === 5) {
+        ctx.beginPath();
+        ctx.arc(x*tileSize+tileSize/2, y*tileSize+tileSize/2, tileSize/4, 0, 2*Math.PI);
+        ctx.fillStyle = goalCol;
+        ctx.fill();
+      }
+      // Kiste
+      if (v === 4 || v === 5) {
+        ctx.fillStyle = boxCol;
+        ctx.fillRect(x*tileSize+tileSize*0.17, y*tileSize+tileSize*0.17, tileSize*0.66, tileSize*0.66);
+        ctx.strokeStyle = "#55320b";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x*tileSize+tileSize*0.17, y*tileSize+tileSize*0.17, tileSize*0.66, tileSize*0.66);
+      }
+      // Spieler
+      if (gameState.px === x && gameState.py === y) {
+        ctx.beginPath();
+        ctx.arc(x*tileSize+tileSize/2, y*tileSize+tileSize/2, tileSize/2.7, 0, 2*Math.PI);
+        ctx.fillStyle = gameState.player.color;
+        ctx.fill();
+        ctx.strokeStyle = "#222";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x*tileSize+tileSize/2, y*tileSize+tileSize/2+tileSize/5, tileSize/9, 0, 2*Math.PI);
+        ctx.fillStyle = "#fff";
+        ctx.fill();
+      }
+    }
+  }
+}
+
+// Undo
+function undo() {
+  if (gameState.history.length > 0) {
+    const {level, px, py, field} = gameState.history.pop();
+    currentLevel = JSON.parse(JSON.stringify(field));
+    gameState.px = px; gameState.py = py;
+    drawLevel();
+    showStory("Rückgängig gemacht!");
+  } else {
+    showStory("Du kannst keinen weiteren Zug rückgängig machen.");
+  }
+}
+
+function movePlayer(dir) {
+  const level = currentLevel;
+  let px = gameState.px, py = gameState.py;
+  let dx=0, dy=0;
+  if(dir==="up") dy=-1;
+  if(dir==="down") dy=1;
+  if(dir==="left") dx=-1;
+  if(dir==="right") dx=1;
+  let nx=px+dx, ny=py+dy;
+  if(level[ny][nx]===1) return;
+  gameState.history.push({level: gameState.level, px, py, field: JSON.parse(JSON.stringify(level))});
+  if(level[ny][nx]===4||level[ny][nx]===5) {
+    let nnx=nx+dx, nny=ny+dy;
+    if(level[nny][nnx]!==0 && level[nny][nnx]!==3) { gameState.history.pop(); return; }
+    if(level[nny][nnx]===3) level[nny][nnx]=5;
+    else level[nny][nnx]=4;
+    level[ny][nx]= (level[ny][nx]===5) ? 3 : 0;
+  }
+  if(level[py][px]===2) level[py][px]=0;
+  else if(level[py][px]===3) level[py][px]=3;
+  gameState.px=nx; gameState.py=ny;
+  if(level[ny][nx]===3) level[ny][nx]=2;
+  else level[ny][nx]=2;
+  drawLevel();
+  if (isSolved()) {
+    if (!gameState.solved.includes(gameState.level)) {
+      gameState.solved.push(gameState.level);
+      saveProgress();
+    }
+    showStory("Level geschafft! 🎉 Bald erfährst du mehr über dein Abenteuer...");
+    setTimeout(()=>{
+      if (gameState.solved.length === levels.length) {
+        endGame();
+      } else {
+        nextLevel();
+      }
+    }, 1400);
+  }
+}
+
+function isSolved() {
+  for (let y=0; y<currentLevel.length; y++)
+    for (let x=0; x<currentLevel[0].length; x++)
+      if (currentLevel[y][x] === 3) return false;
+  return true;
+}
+
+function nextLevel() {
+  if (gameState.level < levels.length) {
+    gameState.level++;
+    levelHeader.textContent = `Level ${gameState.level} – ${gameState.player.name}`;
+    loadLevel(gameState.level);
+    levelSelect.value = gameState.level;
+    showProgressStory();
+  } else {
     endGame();
   }
 }
 
-// ------------------------------
-// Runde starten (nach Klick auf "Runde starten")
-// ------------------------------
-function startRound() {
-  // Ausgewählte Zeit aus dem Dropdown (Sekunden)
-  const duration = parseInt(timeSelect.value);
-  // Countdown vorbereiten
-  let count = 3;
-  countdownDisplay.textContent = count;
-  countdownDisplay.classList.remove('hidden');
-  timeConfigDiv.classList.add('hidden'); // Auswahl ausblenden während Countdown
-
-  // 3-Sekunden-Countdown
-  countdownInterval = setInterval(() => {
-    count--;
-    if (count > 0) {
-      countdownDisplay.textContent = count;
-    } else {
-      clearInterval(countdownInterval);
-      countdownDisplay.classList.add('hidden');
-      // Runde beginnt: Wort und Buttons einblenden
-      wordDisplay.classList.remove('hidden');
-      controlsDiv.classList.remove('hidden');
-      // Ersten Timer-Wert anzeigen
-      updateTimerDisplay(duration);
-      // Zufälliges erstes Wort anzeigen
-      nextWord();
-      // Timer starten
-      startTimer(duration);
-    }
-  }, 1000);
-}
-
-// ------------------------------
-// Timer starten für die Runde
-// ------------------------------
-function startTimer(seconds) {
-  let timeLeft = seconds;
-  // Jede Sekunde den Timer aktualisieren
-  timerInterval = setInterval(() => {
-    timeLeft--;
-    if (timeLeft >= 0) {
-      updateTimerDisplay(timeLeft);
-    }
-    // Zeit abgelaufen
-    if (timeLeft <= 0) {
-      clearInterval(timerInterval);
-      // Wechsel zum nächsten Spieler
-      switchPlayer();
-    }
-  }, 1000);
-}
-
-// Timer-Anzeige (Format m:ss)
-function updateTimerDisplay(time) {
-  const min = Math.floor(time / 60);
-  const sec = time % 60;
-  timerDisplay.textContent = `Zeit: ${min}:${sec.toString().padStart(2, '0')}`;
-}
-
-// ------------------------------
-// Wörter verwalten
-// ------------------------------
-// Zeigt das nächste Wort an (zufällig aus dem Array)
-function nextWord() {
-  const index = Math.floor(Math.random() * words.length);
-  wordDisplay.textContent = words[index];
-}
-
-// ------------------------------
-// Button-Handler
-// ------------------------------
-function markCorrect() {
-  // Punkt für aktuellen Spieler
-  players[currentPlayerIndex].score++;
-  scoreDisplay.textContent = `Punkte: ${players[currentPlayerIndex].score}`;
-  // Nächstes Wort zeigen
-  nextWord();
-}
-
-// "Weiter": Nächste Wort ohne Punkt
-// (Macht dasselbe wie nextWord())
-nextBtn.addEventListener('click', nextWord);
-
-// ------------------------------
-// Spielerwechsel nach Ablauf der Zeit
-// ------------------------------
-function switchPlayer() {
-  // Aktuelle Runde und Spieler erhöhen
-  currentPlayerIndex++;
-  // Wenn alle Spieler einmal dran waren, zur nächsten Rundendurchgang wechseln
-  if (currentPlayerIndex >= players.length) {
-    currentPlayerIndex = 0;
-    currentRound++;
-  }
-  // Nächste Runde oder Spielende
-  nextTurn();
-}
-
-// ------------------------------
-// Spiel beenden und Scoreboard anzeigen
-// ------------------------------
+// Finale "Danke"-Story
 function endGame() {
-  // Spiel-UI verstecken
-  gameDiv.classList.add('hidden');
-  // Scoreboard berechnen
-  // Sortiere Spieler nach absteigender Punktzahl
-  const ranking = [...players].sort((a, b) => b.score - a.score);
-  // Tabelle leeren und neue Kopfzeile anlegen
-  resultTable.innerHTML = `
-    <tr><th>Platz</th><th>Spieler</th><th>Punkte</th></tr>
-  `;
-  // Zeilen für Rangliste hinzufügen
-  ranking.forEach((player, index) => {
-    const row = resultTable.insertRow();
-    row.insertCell().textContent = (index + 1) + ".";
-    row.insertCell().textContent = player.name;
-    row.insertCell().textContent = player.score;
-  });
-  // Scoreboard anzeigen
-  scoreboardDiv.classList.remove('hidden');
+  showStory(`Du hast jedes Rätsel gemeistert, ${gameState.player.name}! Danke fürs Spielen. Mehr Level folgen?`);
+  setTimeout(()=>{
+    gameArea.style.display = "none";
+    mainMenu.style.display = "flex";
+    showStory("Willkommen zurück im Menü! Starte ein neues Abenteuer oder probiere eine andere Farbe.");
+  }, 5000);
 }
 
+// Level-Auswahl Dropdown füllen
+function fillLevelSelect() {
+  if (!levelSelect) return;
+  levelSelect.innerHTML = "";
+  for (let i=1; i<=levels.length; i++) {
+    let opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = i + (gameState.solved && gameState.solved.includes(i) ? " ✓" : "");
+    levelSelect.appendChild(opt);
+  }
+  levelSelect.value = gameState.level || 1;
+}
+levelSelect.onchange = function() {
+  gameState.level = parseInt(levelSelect.value);
+  loadLevel(gameState.level);
+  levelHeader.textContent = `Level ${gameState.level} – ${gameState.player.name}`;
+};
+
+window.onload = function() {
+  loadProgress();
+  fillLevelSelect();
+  showStory("Trage deinen Namen ein, wähle Farbe und Stil und starte das Abenteuer!");
+};
