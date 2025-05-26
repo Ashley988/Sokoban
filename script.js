@@ -411,4 +411,65 @@ function draw() {
   ctx.fill();
   // Smile
   ctx.strokeStyle = "#fff";
- 
+  ctx.beginPath();
+  ctx.arc(player.x+16, player.y+17, 6, 0.1*Math.PI, 0.9*Math.PI, false);
+  ctx.stroke();
+  // ASLI Schrift
+  ctx.font = "bold 11px 'Press Start 2P',monospace";
+  ctx.fillStyle = "#fff";
+  ctx.fillText("ASLI", player.x+5, player.y+36);
+}
+
+// Wolke, Baum, Busch Hilfsfunktionen
+function drawCloud(ctx,x,y,w,h){
+  ctx.save();
+  ctx.globalAlpha=0.45;
+  ctx.fillStyle="#fff";
+  ctx.beginPath();
+  ctx.ellipse(x,y,w,h,0,0,Math.PI*2);
+  ctx.ellipse(x+w*0.4,y-7,w*0.8,h*0.95,0,0,Math.PI*2);
+  ctx.ellipse(x-w*0.3,y-5,w*0.6,h*0.7,0,0,Math.PI*2);
+  ctx.fill();
+  ctx.globalAlpha=1;
+  ctx.restore();
+}
+function drawTree(ctx,x,y,r,h,leaf){
+  // Stamm
+  ctx.fillStyle="#7a5a32";
+  ctx.fillRect(x-7,y+h-25,14,25);
+  // Krone
+  ctx.beginPath();
+  ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fillStyle=leaf;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x-13,y+13,r*0.7,0,Math.PI*2);
+  ctx.arc(x+11,y+15,r*0.6,0,Math.PI*2);
+  ctx.fill();
+}
+function drawBush(ctx,x,y,r,leaf){
+  ctx.beginPath();
+  ctx.arc(x,y,r*0.8,0,Math.PI*2);
+  ctx.arc(x+12,y+7,r*0.6,0,Math.PI*2);
+  ctx.arc(x-13,y+7,r*0.5,0,Math.PI*2);
+  ctx.fillStyle=leaf;
+  ctx.fill();
+}
+
+// == UTILS ==
+function rectsCollide(a, aSize, b, bSize) {
+  return (
+    a.x < b.x + bSize.w &&
+    a.x + aSize.w > b.x &&
+    a.y < b.y + bSize.h &&
+    a.y + aSize.h > b.y
+  );
+}
+// == CONTROLS ==
+window.addEventListener('keydown', (e) => {
+  keys[e.code] = true;
+  if ((e.code === 'Space' || e.code === 'ArrowUp') && player && player.onGround) e.preventDefault();
+});
+window.addEventListener('keyup', (e) => {
+  keys[e.code] = false;
+});
