@@ -3,58 +3,54 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aslis Stirnraten-Spiel</title>
+  <title>Pixel Sokoban Adventure</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Setup: Spieler und Runden festlegen -->
-  <div id="setup">
-    <h1>Aslis Stirnraten-Spiel</h1>
-    <label for="playerNames">Spieler (Komma-getrennt):</label>
-    <input type="text" id="playerNames" placeholder="Name1, Name2, ...">
-    <br><br>
-    <label for="roundsCount">Runden pro Spieler:</label>
-    <input type="number" id="roundsCount" min="1" value="1">
-    <br><br>
-    <button id="startGameBtn">Spiel starten</button>
-  </div>
-
-  <!-- Spiel-Bereich: Timer, Wort, Buttons, Zeit-Auswahl -->
-  <div id="game" class="hidden">
-    <!-- Rundentimer oben -->
-    <div id="timer">Zeit: 0:00</div>
-    <!-- Anzeige, welcher Spieler und welche Runde -->
-    <div id="roundInfo" class="round-info"></div>
-    <!-- Aktuelles Wort (farbig hervorgehoben) -->
-    <div id="word" class="word"></div>
-    <!-- Punktestand des aktuellen Spielers -->
-    <div id="score">Punkte: 0</div>
-
-    <!-- Kontroll-Buttons (Weiter/Richtig) -->
-    <div id="controls" class="controls hidden">
-      <button id="nextBtn">Weiter</button>
-      <button id="correctBtn">Richtig</button>
+  <div id="mainMenu" class="menu">
+    <h1>Pixel Sokoban Adventure</h1>
+    <div class="menu-block">
+      <label for="playerName">Name:</label>
+      <input id="playerName" maxlength="10" placeholder="Held*in" autocomplete="off">
     </div>
-
-    <!-- Zeit-Auswahl und Start-Button für jede Runde -->
-    <div id="timeConfig" class="time-config">
-      <label for="timeSelect">Rundenzeit:</label>
-      <select id="timeSelect"></select>
-      <button id="startRoundBtn">Runde starten</button>
-      <!-- 3-Sekunden-Countdown -->
-      <div id="countdown" class="countdown hidden"></div>
+    <div class="menu-block">
+      <label for="playerColor">Figur-Farbe:</label>
+      <input id="playerColor" type="color" value="#68d9ee">
+    </div>
+    <div class="menu-block">
+      <label for="themeSelect">Stil:</label>
+      <select id="themeSelect">
+        <option value="classic">Klassisch</option>
+        <option value="forest">Wald</option>
+        <option value="night">Nacht</option>
+      </select>
+    </div>
+    <div class="menu-block">
+      <button id="startBtn">Abenteuer beginnen</button>
+    </div>
+    <div class="menu-block">
+      <label for="levelSelect">Level-Auswahl:</label>
+      <select id="levelSelect"></select>
     </div>
   </div>
 
-  <!-- Scoreboard: Ergebnis-Tabelle -->
-  <div id="scoreboard" class="hidden">
-    <h2>Ergebnis</h2>
-    <table id="resultTable">
-      <!-- Spalten: Platz, Spieler, Punkte -->
-    </table>
+  <div id="gameArea" style="display:none;">
+    <div id="levelHeader"></div>
+    <canvas id="gameCanvas" width="352" height="352"></canvas>
+    <div id="controller">
+      <div id="joystickOuter">
+        <div id="joystickThumb"></div>
+      </div>
+    </div>
+    <div id="gameBtns">
+      <button id="undoBtn">↶ Rückgängig</button>
+      <button id="restartLevelBtn">⟳ Neu starten</button>
+      <button id="levelSelectBtn">Level-Auswahl</button>
+    </div>
+    <div id="storyBox" class="story-box"></div>
+    <button id="menuBtn" style="margin-top:16px;">Zum Menü</button>
   </div>
 
   <script src="script.js"></script>
 </body>
 </html>
-
